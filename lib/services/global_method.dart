@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
+import "package:flutter/material.dart";
 
-import '../widgets/text_widget.dart';
+import "../widgets/text_widget.dart";
 
 class GlobalMethods {
   static navigateTo({required BuildContext ctx, required String routeName}) {
     Navigator.pushNamed(ctx, routeName);
   }
-
   static Future<void> warningDialog({
     required String title,
     required String subtitle,
@@ -19,7 +18,7 @@ class GlobalMethods {
           return AlertDialog(
             title: Row(children: [
               Image.asset(
-                'assets/images/warning-sign.png',
+                "images/warning-sign.png",
                 height: 20,
                 width: 20,
                 fit: BoxFit.fill,
@@ -39,7 +38,7 @@ class GlobalMethods {
                 },
                 child: TextWidget(
                   color: Colors.cyan,
-                  text: 'Cancel',
+                  text: "Cancel",
                   textSize: 18,
                 ),
               ),
@@ -49,7 +48,7 @@ class GlobalMethods {
                 },
                 child: TextWidget(
                   color: Colors.red,
-                  text: 'OK',
+                  text: "OK",
                   textSize: 18,
                 ),
               ),
@@ -92,7 +91,7 @@ class GlobalMethods {
               },
               child: TextWidget(
                 color: Colors.red,
-                text: "Ok",
+                text: "OK",
                 textSize: 18,
               ),
             ),

@@ -7,22 +7,25 @@ import 'consts/theme_data.dart';
 import 'controllers/MenuController.dart';
 import 'providers/dark_theme_provider.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    // Replace with actual values
     options: const FirebaseOptions(
-      apiKey: "AIzaSyCQGleWVKICh-Rn32SiIJef4VpsEd3QPHc",
-      appId: "1:821726272760:web:7575d8beec8f34eb616f0d",
-      messagingSenderId: "821726272760",
-      projectId: "flutter-grocery-app-df567",
-    ),
+            apiKey: "AIzaSyCQGleWVKICh-Rn32SiIJef4VpsEd3QPHc",
+            appId: "1:821726272760:web:7575d8beec8f34eb616f0d",
+            messagingSenderId: "821726272760",
+            projectId: "flutter-grocery-app-df567",
+            storageBucket: "flutter-grocery-app-df567.appspot.com",
+          ),
+
   );
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -42,6 +45,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   final Future<FirebaseApp> _firebaseInitialization = Firebase.initializeApp();
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(

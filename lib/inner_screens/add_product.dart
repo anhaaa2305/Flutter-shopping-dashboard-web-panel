@@ -1,43 +1,43 @@
-import 'dart:async';
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dotted_border/dotted_border.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_iconly/flutter_iconly.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:shopping_dashboard_screen/controllers/MenuController.dart';
-import 'package:shopping_dashboard_screen/responsive.dart';
-import 'package:shopping_dashboard_screen/services/utils.dart';
-import 'package:shopping_dashboard_screen/widgets/header.dart';
-import 'package:shopping_dashboard_screen/widgets/loading_manager/loading_manager.dart';
-import 'package:shopping_dashboard_screen/widgets/side_menu.dart';
-import 'package:shopping_dashboard_screen/widgets/text_widget.dart';
-import 'package:uuid/uuid.dart';
-import '../services/global_method.dart';
-import '../widgets/buttons.dart';
+import "dart:async";
+import "dart:io";
+import "package:cloud_firestore/cloud_firestore.dart";
+import "package:dotted_border/dotted_border.dart";
+import "package:firebase_storage/firebase_storage.dart";
+import "package:flutter/cupertino.dart";
+import "package:flutter/foundation.dart";
+import "package:flutter/material.dart";
+import "package:flutter/services.dart";
+import "package:flutter_iconly/flutter_iconly.dart";
+import "package:fluttertoast/fluttertoast.dart";
+import "package:image_picker/image_picker.dart";
+import "package:provider/provider.dart";
+import "package:shopping_dashboard_screen/controllers/MenuController.dart";
+import "package:shopping_dashboard_screen/responsive.dart";
+import "package:shopping_dashboard_screen/services/utils.dart";
+import "package:shopping_dashboard_screen/widgets/header.dart";
+import "package:shopping_dashboard_screen/widgets/loading_manager/loading_manager.dart";
+import "package:shopping_dashboard_screen/widgets/side_menu.dart";
+import "package:shopping_dashboard_screen/widgets/text_widget.dart";
+import "package:uuid/uuid.dart";
+import "../services/global_method.dart";
+import "../widgets/buttons.dart";
 
 class UploadProductForm extends StatefulWidget {
-  static const routeName = '/UploadProductForm';
-
+  static const routeName = "/UploadProductForm";
   const UploadProductForm({super.key});
-
   @override
   State<UploadProductForm> createState() => _UploadProductFormState();
 }
 
 class _UploadProductFormState extends State<UploadProductForm> {
   final _formKey = GlobalKey<FormState>();
-  String _catValue = 'Vegetables';
+  String _catValue = "Vegetables";
   late final TextEditingController _titleController, _priceController;
   int _groupValue = 1;
   bool isPiece = false;
   File? _pickImage;
   Uint8List webImage = Uint8List(8);
+
 
   @override
   void initState() {
@@ -54,16 +54,18 @@ class _UploadProductFormState extends State<UploadProductForm> {
   }
 
   bool _validateForm() {
-    if (_titleController.text.isEmpty || _priceController.text.isEmpty) {
+    if (_titleController.text.isEmpty ||
+        _priceController.text.isEmpty ||
+        _pickImage == null) {
       return false;
     }
     return true;
   }
 
   bool _isLoading = false;
-
   void _uploadForm(BuildContext context) async {
     final isValid = _formKey.currentState!.validate();
+    String? imageUrl;
     FocusScope.of(context).unfocus();
     if (_validateForm()) {
       setState(() {
@@ -76,15 +78,34 @@ class _UploadProductFormState extends State<UploadProductForm> {
     }
     if (isValid) {
       _formKey.currentState!.save();
+      if (_pickImage == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        GlobalMethods.errorDialog(
+            subtitle: "Please pick up an image", context: context);
+        return;
+      }
       final uid = const Uuid().v4();
       try {
+        // Store image with Firebase
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child("productImages")
+            .child("$uid.jpg");
+        if (kIsWeb) {
+          await ref.putData(webImage);
+        } else {
+          await ref.putFile(_pickImage!);
+        }
+        imageUrl = await ref.getDownloadURL();
         // Using Cloud FireStore to Store data
         await FirebaseFirestore.instance.collection("products").doc(uid).set({
           "id": uid,
           "title": _titleController.text.trim(),
           "price": _priceController.text,
           "salePrice": 0.1,
-          "imageUrl": " ",
+          "imageUrl": imageUrl,
           "productCategoryName": _catValue,
           "isOnSale": false,
           "isPiece": isPiece,
@@ -102,7 +123,7 @@ class _UploadProductFormState extends State<UploadProductForm> {
         });
         if (context.mounted) {
           GlobalMethods.errorDialog(
-              subtitle: "Has occured when saving account: ${error.message}",
+              subtitle: "Has occured when saving product: ${error.message}",
               context: context);
         }
       } catch (error) {
@@ -111,7 +132,7 @@ class _UploadProductFormState extends State<UploadProductForm> {
         });
         if (context.mounted) {
           GlobalMethods.errorDialog(
-              subtitle: "Has occured when saving account: $error",
+              subtitle: "Has occured when saving product: $error",
               context: context);
         }
       } finally {
@@ -126,7 +147,7 @@ class _UploadProductFormState extends State<UploadProductForm> {
     _priceController.clear();
     _titleController.clear();
     _groupValue = 1;
-    _catValue = 'Vegetables';
+    _catValue = "Vegetables";
     isPiece = false;
     setState(() {
       _pickImage = null;
@@ -215,6 +236,9 @@ class _UploadProductFormState extends State<UploadProductForm> {
                                   }
                                   return null;
                                 },
+                                style: TextStyle(
+                                  color: color
+                                ),
                                 decoration: inputDecoration,
                               ),
                             ),
@@ -253,9 +277,13 @@ class _UploadProductFormState extends State<UploadProductForm> {
                                               }
                                               return null;
                                             },
+                                            style: TextStyle(
+                                                color: color,
+                                              fontSize: 20,
+                                            ),
                                             inputFormatters: <TextInputFormatter>[
                                               FilteringTextInputFormatter.allow(
-                                                  RegExp(r'[0-9.]')),
+                                                  RegExp(r"[0-9.]")),
                                             ],
                                             decoration: InputDecoration(
                                               border: OutlineInputBorder(
@@ -496,7 +524,7 @@ class _UploadProductFormState extends State<UploadProductForm> {
                       imagePicker();
                     },
                     child: TextWidget(
-                      text: 'Choose an image',
+                      text: "Choose an image",
                       color: Colors.blue,
                     ))
               ],
@@ -524,42 +552,42 @@ class _UploadProductFormState extends State<UploadProductForm> {
               _catValue = value!;
             });
           },
-          hint: const Text('Select a category'),
+          hint: const Text("Select a category"),
           items: const [
             DropdownMenuItem(
-              value: 'Vegetables',
+              value: "Vegetables",
               child: Text(
-                'Vegetables',
+                "Vegetables",
               ),
             ),
             DropdownMenuItem(
-              value: 'Fruits',
+              value: "Fruits",
               child: Text(
-                'Fruits',
+                "Fruits",
               ),
             ),
             DropdownMenuItem(
-              value: 'Grains',
+              value: "Grains",
               child: Text(
-                'Grains',
+                "Grains",
               ),
             ),
             DropdownMenuItem(
-              value: 'Nuts',
+              value: "Nuts",
               child: Text(
-                'Nuts',
+                "Nuts",
               ),
             ),
             DropdownMenuItem(
-              value: 'Herbs',
+              value: "Herbs",
               child: Text(
-                'Herbs',
+                "Herbs",
               ),
             ),
             DropdownMenuItem(
-              value: 'Spices',
+              value: "Spices",
               child: Text(
-                'Spices',
+                "Spices",
               ),
             )
           ],
